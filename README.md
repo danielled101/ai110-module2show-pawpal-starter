@@ -9,8 +9,14 @@ A busy pet owner needs help staying consistent with pet care. They want an assis
 - Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
 - Consider constraints (time available, priority, owner preferences)
 - Produce a daily plan and explain why it chose that plan
-
 Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
+
+#add pet, add/edit tasks, generate a daily plan (schedule) or pet
+- Owner: add name, add pet Method: add pet/remove pet, get tasks
+- Pet: Add pet name, breed, age, tasks Method: add task, remove task, get task
+- Task: description, time, frequency, priority, completed Method: mark completed
+- Scheduler: owner Method: sort by time, filter tasks, detect conflicts, recurring tasks
+
 
 ## What you will build
 
