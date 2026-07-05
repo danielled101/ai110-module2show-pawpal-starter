@@ -1,11 +1,27 @@
 classDiagram
     %% Keep this file updated so it matches your final implementation.
 
-    class Owner {
-        +str name
-        +list pets
-        +add_pet(pet) None
-        +remove_pet(pet) None
+    class Frequency {
+        <<enumeration>>
+        DAILY
+        WEEKLY
+        ONCE
+    }
+
+    class Priority {
+        <<enumeration>>
+        HIGH
+        MEDIUM
+        LOW
+    }
+
+    class Task {
+        +str description
+        +int duration_minutes
+        +Frequency frequency
+        +Priority priority
+        +bool completed
+        +mark_completed() None
     }
 
     class Pet {
@@ -18,22 +34,23 @@ classDiagram
         +get_tasks() list
     }
 
-    class Task {
-        +str description
-        +int duration_minutes
-        +str frequency
-        +str priority
-        +bool completed
-        +mark_completed() None
+    class Owner {
+        +str name
+        +list pets
+        +add_pet(pet) None
+        +remove_pet(pet) None
     }
 
     class Scheduler {
         +Owner owner
-        +sort_by_time() list
-        +filter_tasks() list
-        +detect_conflicts() list
+        +generate_plan(pet) list
+        +sort_by_time(tasks) list
+        +filter_tasks(tasks) list
+        +detect_conflicts(scheduled) list
     }
 
     Owner "1" --> "0..*" Pet : owns
     Pet "1" --> "0..*" Task : has
     Scheduler "1" --> "1" Owner : schedules for
+    Task --> Frequency : uses
+    Task --> Priority : uses

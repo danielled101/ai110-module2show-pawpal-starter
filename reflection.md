@@ -5,12 +5,22 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+
+My initial UML design modeled a pet care scheduling system with four classes connected by ownership relationships: an owner manages pets, each pet holds its own tasks, and a scheduler reads from the owner to build a daily plan.
+
 - What classes did you include, and what responsibilities did you assign to each?
+
+Owner — stores the owner's name and their list of pets; responsible for adding and removing pets.
+Pet — stores the pet's name, breed, and age; responsible for managing its own task list via add_task, remove_task, and get_tasks.
+Task — stores a care item's description, duration in minutes, frequency, priority, and completion status; responsible for marking itself completed.
+Scheduler — takes an Owner as input; responsible for sorting tasks by time, filtering tasks that fit the day's constraints, and detecting scheduling conflicts.
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+
+The main issues were that the Scheduler had no clear path to actually reach tasks, its methods took no inputs so they had nothing to work with, and frequency and priority were open text fields that could silently break from a typo. To fix this, Frequency and Priority enums were added so those fields only accept a set list of valid values. A generate_plan(pet) method was added to the Scheduler as a clear entry point — you pass in a specific pet and it handles the rest. The helper methods sort_by_time and filter_tasks were updated to take a task list as input, and detect_conflicts was updated to take the already-scheduled tasks so it actually has something to compare. The UML diagram was also updated to reflect all of these changes.
 
 ---
 
