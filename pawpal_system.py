@@ -114,7 +114,8 @@ class Scheduler:
         filtered = self.filter_tasks(pet.get_tasks(), completed=False, today=today)
         sorted_tasks = self.sort_by_time(filtered)
         conflicts = self.detect_conflicts(sorted_tasks)
-        return [t for t in sorted_tasks if t not in conflicts]
+        conflict_ids = {id(t) for t in conflicts}
+        return [t for t in sorted_tasks if id(t) not in conflict_ids]
 
     def sort_by_time(self, tasks: List[Task]) -> List[Task]:
         """Sort tasks chronologically by their scheduled "HH:MM" time.
@@ -188,13 +189,26 @@ class Scheduler:
         return next_task
 
     def detect_conflicts(self, scheduled: List[Task]) -> List[Task]:
-        """Return tasks that push the total duration over the daily time budget."""
+        """Return tasks that would push the total duration over the daily time budget.
+
+        Tasks are considered in the given order. A task only counts toward
+        the running total if it fits within what's left of the budget, so
+        one oversized task doesn't cause every task after it to be flagged
+        too — a smaller task later in the list can still fit.
+
+        Args:
+            scheduled: The tasks to check, in the order they'd run.
+
+        Returns:
+            The tasks that don't fit within `max_daily_minutes`.
+        """
         conflicts = []
         total = 0
         for task in scheduled:
-            total += task.duration_minutes
-            if total > self.max_daily_minutes:
+            if total + task.duration_minutes > self.max_daily_minutes:
                 conflicts.append(task)
+            else:
+                total += task.duration_minutes
         return conflicts
 
     def detect_time_conflicts(self, today: Optional[date] = None) -> List[str]:

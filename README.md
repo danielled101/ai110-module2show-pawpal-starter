@@ -81,17 +81,28 @@ Luna (Tabby Cat)
 
 ```bash
 # Run the full test suite:
-pytest
+python -m pytest
 
 # Run with coverage:
 pytest --cov
 ```
+The tests confirm task creation, completion, and filtering all work correctly. They verify recurrence — daily/weekly tasks generate a correctly-dated next occurrence, one-time tasks don't recur, and new occurrences stay hidden until actually due, even across multiple cycles. They check sorting puts tasks in time order with priority as a tie-breaker, and handles empty lists safely. They verify conflict detection flags same-time clashes within and across pets while ignoring completed or not-yet-due tasks, and that the daily time-budget logic flags oversized tasks without over-blocking, allows an exact-limit task, and excludes by identity rather than value. Finally, they cover removing tasks/pets and scheduling for a pet with no tasks.
+
+- Confidence level: 4
 
 Sample test output:
 
+============================================================ test session starts ============================================================
+platform win32 -- Python 3.13.14, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\devos\github\ai110-module2show-pawpal-starter
+plugins: anyio-4.13.0
+collected 32 items                                                                                                                                          
+
+tests\test_pawpal.py ................................                                                                                                 [100%]
+
+============================================================ 32 passed in 0.09s ============================================================
 ```
-# Paste your pytest output here
-```
+
 
 ## 📐 Smarter Scheduling
 

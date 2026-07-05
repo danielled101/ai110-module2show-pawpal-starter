@@ -245,3 +245,188 @@ def test_detect_time_conflicts_ignores_completed_and_not_yet_due_tasks():
     warnings = scheduler.detect_time_conflicts(today=today)
 
     assert warnings == []
+
+
+def test_sort_by_time_breaks_ties_by_priority():
+    scheduler = Scheduler(Owner(name="Sarah"))
+    low = Task("Playtime", 15, Frequency.DAILY, Priority.LOW, time="08:00")
+    high = Task("Medication", 5, Frequency.DAILY, Priority.HIGH, time="08:00")
+    medium = Task("Brushing", 10, Frequency.DAILY, Priority.MEDIUM, time="08:00")
+
+    ordered = scheduler.sort_by_time([low, medium, high])
+
+    assert [t.description for t in ordered] == ["Medication", "Brushing", "Playtime"]
+
+
+def test_detect_conflicts_does_not_cascade_after_oversized_task():
+    scheduler = Scheduler(Owner(name="Sarah"), max_daily_minutes=60)
+    big = Task("Long hike", 50, Frequency.DAILY, Priority.HIGH, time="08:00")
+    also_big = Task("Grooming", 40, Frequency.DAILY, Priority.MEDIUM, time="09:00")
+    small = Task("Feeding", 5, Frequency.DAILY, Priority.LOW, time="10:00")
+
+    # big fits (50 <= 60). also_big doesn't fit on top of it (50+40=90 > 60), so it's
+    # a conflict and its minutes are never added to the running total. small should
+    # still fit (50+5=55 <= 60) even though it comes after a conflicting task.
+    conflicts = scheduler.detect_conflicts([big, also_big, small])
+
+    assert big not in conflicts
+    assert also_big in conflicts
+    assert small not in conflicts
+
+
+def test_generate_plan_excludes_only_the_oversized_task():
+    owner = Owner(name="Sarah")
+    biscuit = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    biscuit.add_task(Task("Long hike", 50, Frequency.DAILY, Priority.HIGH, time="08:00"))
+    biscuit.add_task(Task("Grooming", 40, Frequency.DAILY, Priority.MEDIUM, time="09:00"))
+    biscuit.add_task(Task("Feeding", 5, Frequency.DAILY, Priority.LOW, time="10:00"))
+    owner.add_pet(biscuit)
+    scheduler = Scheduler(owner, max_daily_minutes=60)
+
+    plan = scheduler.generate_plan(biscuit)
+
+    assert [t.description for t in plan] == ["Long hike", "Feeding"]
+
+
+def test_generate_plan_excludes_conflict_by_identity_not_value():
+    owner = Owner(name="Sarah")
+    biscuit = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    # Two separate task instances that happen to be equal by value (dataclass
+    # equality compares fields, not identity) — only the one that doesn't fit
+    # the budget should be dropped, not both.
+    overflowing = Task("Feeding", 50, Frequency.DAILY, Priority.HIGH, time="08:00")
+    identical_but_fits_alone = Task("Feeding", 50, Frequency.DAILY, Priority.HIGH, time="08:00")
+    biscuit.add_task(overflowing)
+    biscuit.add_task(identical_but_fits_alone)
+    owner.add_pet(biscuit)
+    scheduler = Scheduler(owner, max_daily_minutes=50)
+
+    plan = scheduler.generate_plan(biscuit)
+
+    assert plan == [overflowing]
+
+
+# --- Sorting correctness ---
+
+
+def test_sort_by_time_returns_chronological_order():
+    scheduler = Scheduler(Owner(name="Sarah"))
+    evening = Task("Evening walk", 20, Frequency.DAILY, Priority.MEDIUM, time="18:00")
+    morning = Task("Morning walk", 30, Frequency.DAILY, Priority.HIGH, time="08:00")
+    midday = Task("Lunch", 10, Frequency.DAILY, Priority.LOW, time="12:00")
+
+    ordered = scheduler.sort_by_time([evening, morning, midday])
+
+    assert [t.description for t in ordered] == ["Morning walk", "Lunch", "Evening walk"]
+
+
+def test_sort_by_time_and_filter_tasks_accept_empty_list():
+    scheduler = Scheduler(Owner(name="Sarah"))
+
+    assert scheduler.sort_by_time([]) == []
+    assert scheduler.filter_tasks([], completed=False) == []
+
+
+def test_generate_plan_is_empty_for_pet_with_no_tasks():
+    owner = Owner(name="Sarah")
+    pet = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    owner.add_pet(pet)
+    scheduler = Scheduler(owner)
+
+    assert scheduler.generate_plan(pet) == []
+
+
+# --- Recurrence logic ---
+
+
+def test_completing_daily_task_schedules_it_for_tomorrow_in_generated_plan():
+    today = date(2026, 3, 10)
+    owner = Owner(name="Sarah")
+    pet = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    task = Task("Morning walk", 30, Frequency.DAILY, Priority.HIGH, time="08:00", due_date=today)
+    pet.add_task(task)
+    owner.add_pet(pet)
+    scheduler = Scheduler(owner)
+
+    scheduler.complete_task(pet, task)
+
+    assert scheduler.generate_plan(pet, today=today) == []
+    tomorrow_plan = scheduler.generate_plan(pet, today=today + timedelta(days=1))
+    assert [t.description for t in tomorrow_plan] == ["Morning walk"]
+
+
+def test_recurrence_advances_due_date_across_multiple_cycles():
+    today = date(2026, 3, 10)
+    task = Task("Morning walk", 30, Frequency.DAILY, Priority.HIGH, due_date=today)
+
+    cycle_1 = task.mark_completed()
+    cycle_2 = cycle_1.mark_completed()
+    cycle_3 = cycle_2.mark_completed()
+
+    assert cycle_1.due_date == today + timedelta(days=1)
+    assert cycle_2.due_date == today + timedelta(days=2)
+    assert cycle_3.due_date == today + timedelta(days=3)
+
+
+# --- Conflict detection ---
+
+
+def test_detect_time_conflicts_flags_all_tasks_sharing_a_time_slot():
+    owner = Owner(name="Sarah")
+    biscuit = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    luna = Pet(name="Luna", breed="Tabby Cat", age=5)
+    max_pet = Pet(name="Max", breed="Beagle", age=2)
+    biscuit.add_task(Task("Morning walk", 30, Frequency.DAILY, Priority.HIGH, time="08:00"))
+    luna.add_task(Task("Medication", 5, Frequency.DAILY, Priority.HIGH, time="08:00"))
+    max_pet.add_task(Task("Feeding", 10, Frequency.DAILY, Priority.HIGH, time="08:00"))
+    owner.add_pet(biscuit)
+    owner.add_pet(luna)
+    owner.add_pet(max_pet)
+    scheduler = Scheduler(owner)
+
+    warnings = scheduler.detect_time_conflicts(today=date(2026, 3, 10))
+
+    assert len(warnings) == 1
+    for name in ("Morning walk", "Medication", "Feeding"):
+        assert name in warnings[0]
+
+
+def test_detect_conflicts_task_exactly_at_budget_limit_is_not_flagged():
+    scheduler = Scheduler(Owner(name="Sarah"), max_daily_minutes=60)
+    task = Task("Long hike", 60, Frequency.DAILY, Priority.HIGH, time="08:00")
+
+    conflicts = scheduler.detect_conflicts([task])
+
+    assert conflicts == []
+
+
+# --- Other edge cases ---
+
+
+def test_remove_task_removes_it_from_pets_list():
+    pet = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    task = Task("Feeding", 10, Frequency.DAILY, Priority.HIGH)
+    pet.add_task(task)
+
+    pet.remove_task(task)
+
+    assert pet.get_tasks() == []
+
+
+def test_remove_pet_removes_it_from_owners_list():
+    owner = Owner(name="Sarah")
+    pet = Pet(name="Biscuit", breed="Golden Retriever", age=3)
+    owner.add_pet(pet)
+
+    owner.remove_pet(pet)
+
+    assert owner.pets == []
+
+
+def test_filter_tasks_by_unknown_pet_name_returns_empty_list():
+    owner = _make_owner_with_two_pets()
+    scheduler = Scheduler(owner)
+
+    result = scheduler.filter_tasks(pet_name="Ghost")
+
+    assert result == []
