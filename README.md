@@ -52,30 +52,18 @@ pip install -r requirements.txt
 
 Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
 
+Today's Schedule
 ========================================
-       Today's Schedule
-========================================
-
 Biscuit (Golden Retriever)
-------------------------------
-  [HIGH] Feeding — 10 min (daily)
-  [HIGH] Morning walk — 30 min (daily)
-  [MEDIUM] Evening walk — 20 min (daily)
+ - [HIGH] Feeding — 10 min (daily)
+ - [HIGH] Morning walk — 30 min (daily)
+ - [MEDIUM] Evening walk — 20 min (daily)
 
 Luna (Tabby Cat)
 ------------------------------
-  [HIGH] Medication — 5 min (daily)
-  [HIGH] Feeding — 10 min (daily)
-  [LOW] Playtime — 15 min (weekly)
-
-========================================
-```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
-```
+ - [HIGH] Medication — 5 min (daily)
+ - [HIGH] Feeding — 10 min (daily)
+ - [LOW] Playtime — 15 min (weekly)
 
 ## 🧪 Testing PawPal+
 
@@ -92,19 +80,18 @@ The tests confirm task creation, completion, and filtering all work correctly. T
 
 Sample test output:
 
-============================================================ test session starts ============================================================
+========================== test session starts ============================
 platform win32 -- Python 3.13.14, pytest-9.0.3, pluggy-1.6.0
 rootdir: C:\Users\devos\github\ai110-module2show-pawpal-starter
 plugins: anyio-4.13.0
 collected 32 items                                                                                                                                          
 
-tests\test_pawpal.py ................................                                                                                                 [100%]
+tests\test_pawpal.py ................................                                      [100%]
 
-============================================================ 32 passed in 0.09s ============================================================
+============================ 32 passed in 0.09s ============================
 ```
 
-
-## ✨ Features
+**## ✨ Features**
 
 - **Sorting by time** — Every schedule is ordered chronologically by each task's `"HH:MM"` time, with same-time ties broken by priority (HIGH → MEDIUM → LOW).
 - **Task filtering** — Pull tasks by completion status, by pet name, or both at once, across a single pet or the owner's whole household.
@@ -115,7 +102,7 @@ tests\test_pawpal.py ................................                           
 - **Multi-pet households** — One owner can track any number of pets, each with its own independent task list.
 - **Interactive scheduling UI** — Add tasks with a time picker, mark tasks complete, and generate a live daily plan with conflict warnings, all from the Streamlit app.
 
-## 📐 Smarter Scheduling
+**## 📐 Smarter Scheduling**
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
@@ -127,9 +114,9 @@ tests\test_pawpal.py ................................                           
 
 | Recurring tasks | `Task.mark_completed()`, `Scheduler.complete_task()` | `mark_completed()` computes the next occurrence's `due_date` using `timedelta` (+1 day for DAILY, +7 days for WEEKLY); ONCE tasks don't recur. `Scheduler.complete_task()` marks a task done and automatically adds the next occurrence to the pet's task list. |
 
-## 📸 Demo Walkthrough
+**## 📸 Demo Walkthrough**
 
-### Main UI features
+**### Main UI features**
 
 The Streamlit app (`app.py`) is organized into three steps:
 
@@ -137,7 +124,7 @@ The Streamlit app (`app.py`) is organized into three steps:
 - **Tasks** — Add tasks with a title, duration, priority, frequency, and a time picker. Every task you add appears in a live table sorted chronologically by `Scheduler.sort_by_time()`. A dropdown below the table lets you select any pending task and mark it complete.
 - **Build Schedule** — Generate today's plan for the saved pet. This checks for same-time conflicts across all pets, then displays the filtered, sorted, budget-checked plan as a table with the total scheduled time.
 
-### Example workflow
+**### Example workflow**
 
 1. Save an owner ("Jordan") and a pet ("Mochi").
 2. Add a task — e.g., "Morning walk," 30 minutes, high priority, daily, at 08:00.
@@ -145,14 +132,14 @@ The Streamlit app (`app.py`) is organized into three steps:
 4. Click **Generate schedule** to view today's plan, sorted chronologically with a total duration.
 5. Select "Morning walk" from the dropdown and click **Mark complete** — a new pending "Morning walk" task is automatically scheduled for tomorrow, since it recurs daily.
 
-### Key Scheduler behaviors shown
+**### Key Scheduler behaviors shown**
 
 - **Sorting** — Tasks always display in chronological order (`Scheduler.sort_by_time()`), regardless of the order they were added in.
 - **Conflict warnings** — If two tasks (same pet or different pets) share a time slot, `Scheduler.detect_time_conflicts()` surfaces a warning banner instead of silently double-booking them.
 - **Recurrence** — Marking a daily or weekly task complete (`Scheduler.complete_task()`) automatically creates its next occurrence, which stays hidden from the plan until it's actually due.
 - **Budget conflicts** — `Scheduler.detect_conflicts()` excludes tasks that would push the day past the time budget, without wrongly blocking smaller tasks that come after them.
 
-### Sample CLI output
+**### Sample CLI output**
 
 Running `python main.py` builds Biscuit and Luna's schedules from hardcoded sample data and prints the full flow — today's schedule, a completed-tasks filter, a per-pet filter, and a conflict check (Biscuit's 08:00 walk deliberately clashes with Luna's 08:00 medication):
 
@@ -163,16 +150,14 @@ Running `python main.py` builds Biscuit and Luna's schedules from hardcoded samp
 
 Biscuit (Golden Retriever)
 ------------------------------
-  08:00 [HIGH] Morning walk — 30 min (daily)
-  18:00 [MEDIUM] Evening walk — 20 min (daily)
+ - 08:00 [HIGH] Morning walk — 30 min (daily)
+ - 18:00 [MEDIUM] Evening walk — 20 min (daily)
 
 Luna (Tabby Cat)
 ------------------------------
-  07:45 [HIGH] Feeding — 10 min (daily)
-  08:00 [HIGH] Medication — 5 min (daily)
-  17:00 [LOW] Playtime — 15 min (weekly)
-
-========================================
+ - 07:45 [HIGH] Feeding — 10 min (daily)
+ - 08:00 [HIGH] Medication — 5 min (daily)
+ - 17:00 [LOW] Playtime — 15 min (weekly)
 
 Already completed today:
   - Feeding
