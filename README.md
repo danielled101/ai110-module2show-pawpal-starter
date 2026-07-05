@@ -104,6 +104,17 @@ tests\test_pawpal.py ................................                           
 ```
 
 
+## ✨ Features
+
+- **Sorting by time** — Every schedule is ordered chronologically by each task's `"HH:MM"` time, with same-time ties broken by priority (HIGH → MEDIUM → LOW).
+- **Task filtering** — Pull tasks by completion status, by pet name, or both at once, across a single pet or the owner's whole household.
+- **Daily & weekly recurrence** — Completing a recurring task automatically generates its next occurrence, due exactly one day (DAILY) or one week (WEEKLY) later; one-time tasks never resurface.
+- **Due-date awareness** — A recurring task's next occurrence stays hidden from the schedule until it's actually due, so completing today's walk doesn't clutter today's plan with tomorrow's.
+- **Time-conflict warnings** — The scheduler flags any two tasks booked for the same clock time, whether they belong to the same pet or different pets, with a plain-English warning instead of a silent clash.
+- **Daily time-budget conflicts** — Tasks that would push a pet's day past a configurable time budget are flagged and excluded from the plan, without wrongly blocking smaller tasks scheduled after them.
+- **Multi-pet households** — One owner can track any number of pets, each with its own independent task list.
+- **Interactive scheduling UI** — Add tasks with a time picker, mark tasks complete, and generate a live daily plan with conflict warnings, all from the Streamlit app.
+
 ## 📐 Smarter Scheduling
 
 | Feature | Method(s) | Notes |
@@ -118,12 +129,61 @@ tests\test_pawpal.py ................................                           
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### Main UI features
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+The Streamlit app (`app.py`) is organized into three steps:
+
+- **Owner & Pet Info** — Enter an owner name, pet name, and species, then save them to start a session.
+- **Tasks** — Add tasks with a title, duration, priority, frequency, and a time picker. Every task you add appears in a live table sorted chronologically by `Scheduler.sort_by_time()`. A dropdown below the table lets you select any pending task and mark it complete.
+- **Build Schedule** — Generate today's plan for the saved pet. This checks for same-time conflicts across all pets, then displays the filtered, sorted, budget-checked plan as a table with the total scheduled time.
+
+### Example workflow
+
+1. Save an owner ("Jordan") and a pet ("Mochi").
+2. Add a task — e.g., "Morning walk," 30 minutes, high priority, daily, at 08:00.
+3. Add a second task for the same pet at a different time, e.g., "Feeding" at 07:30.
+4. Click **Generate schedule** to view today's plan, sorted chronologically with a total duration.
+5. Select "Morning walk" from the dropdown and click **Mark complete** — a new pending "Morning walk" task is automatically scheduled for tomorrow, since it recurs daily.
+
+### Key Scheduler behaviors shown
+
+- **Sorting** — Tasks always display in chronological order (`Scheduler.sort_by_time()`), regardless of the order they were added in.
+- **Conflict warnings** — If two tasks (same pet or different pets) share a time slot, `Scheduler.detect_time_conflicts()` surfaces a warning banner instead of silently double-booking them.
+- **Recurrence** — Marking a daily or weekly task complete (`Scheduler.complete_task()`) automatically creates its next occurrence, which stays hidden from the plan until it's actually due.
+- **Budget conflicts** — `Scheduler.detect_conflicts()` excludes tasks that would push the day past the time budget, without wrongly blocking smaller tasks that come after them.
+
+### Sample CLI output
+
+Running `python main.py` builds Biscuit and Luna's schedules from hardcoded sample data and prints the full flow — today's schedule, a completed-tasks filter, a per-pet filter, and a conflict check (Biscuit's 08:00 walk deliberately clashes with Luna's 08:00 medication):
+
+```
+========================================
+       Today's Schedule
+========================================
+
+Biscuit (Golden Retriever)
+------------------------------
+  08:00 [HIGH] Morning walk — 30 min (daily)
+  18:00 [MEDIUM] Evening walk — 20 min (daily)
+
+Luna (Tabby Cat)
+------------------------------
+  07:45 [HIGH] Feeding — 10 min (daily)
+  08:00 [HIGH] Medication — 5 min (daily)
+  17:00 [LOW] Playtime — 15 min (weekly)
+
+========================================
+
+Already completed today:
+  - Feeding
+
+Luna's tasks only (filter by pet name):
+  - 07:45 Feeding
+  - 08:00 Medication
+  - 17:00 Playtime
+
+Schedule conflict check:
+  WARNING: Time conflict at 08:00: Morning walk (Biscuit), Medication (Luna)
+```
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->

@@ -48,12 +48,19 @@ Exact-match detection can be done with a single dict grouped by time string in o
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+
+I used AI mostly to fill in gaps I might've missed — like brainstorming edge cases for my tests, updating my UML diagram after my code changed, and improving the Streamlit display (sorting, conflict warnings, adding a time picker and a "mark complete" button).
+
 - What kinds of prompts or questions were most helpful?
+
+The prompts that worked best were specific ones tied to my actual files, like "does this diagram still match my code?" or "what edge cases should I test?" — vague prompts would've gotten vague answers.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
+
+At one point I asked for a sample of my program's output for the README, and the AI tried to actually run main.py to get it. I said no — I didn't want it executing my code without me watching. Instead, I had it trace through the code by hand to predict the output, and it flagged clearly that this wasn't the same as actually running it, so I'd still need to run main.py myself to double check before trusting it.
 
 ---
 
@@ -62,12 +69,20 @@ Exact-match detection can be done with a single dict grouped by time string in o
 **a. What you tested**
 
 - What behaviors did you test?
+
+I tested sorting (tasks show up in time order), recurrence (completing a daily/weekly task creates the correct next task, due on the right date), and conflict detection (two tasks at the same time get flagged, whether they belong to the same pet or different pets). I also tested edge cases like empty task lists, a task that exactly fills the time budget, and removing tasks/pets. 
+
 - Why were these tests important?
+
+These mattered because they're the parts most likely to quietly break — off-by-one errors, wrong dates, or silent double-booking.
+
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+
+I feel fairly confident — I have 32 passing tests covering the core logic. What I haven't tested yet is the Streamlit app itself through actual clicking, and I haven't personally confirmed the sample output in my README by running main.py. If I had more time, I'd test the UI directly and add a test for what happens when you try to remove a task or pet that isn't actually in the list.
 
 ---
 
@@ -77,10 +92,16 @@ Exact-match detection can be done with a single dict grouped by time string in o
 
 - What part of this project are you most satisfied with?
 
+I'm happiest with the test suite — it covers a lot more than just the obvious "happy path," including boundary cases like an empty schedule or a task that exactly hits the time limit.
+
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+Next time I'd test the Streamlit app itself while building it, instead of only testing the underlying logic. I'd also double-check AI-generated output (like sample CLI output) by actually running the code myself right away, instead of trusting a hand-traced guess.
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+AI is great at generating a lot of good starting material fast, but I still have to double-check anything it didn't actually run or verify itself — especially things like sample output or edge cases. My judgment is still the last checkpoint.

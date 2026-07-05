@@ -1,3 +1,5 @@
+from datetime import time as time_of_day
+
 import streamlit as st
 from pawpal_system import Frequency, Owner, Pet, Priority, Scheduler, Task
 
@@ -30,7 +32,7 @@ st.divider()
 st.subheader("Tasks")
 st.caption("Add tasks for your pet. These feed directly into the scheduler.")
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     task_title = st.text_input("Task title", value="Morning walk")
 with col2:
@@ -39,6 +41,8 @@ with col3:
     priority = st.selectbox("Priority", ["high", "medium", "low"])
 with col4:
     frequency = st.selectbox("Frequency", ["daily", "weekly", "once"])
+with col5:
+    task_time = st.time_input("Time", value=time_of_day(8, 0))
 
 if st.button("Add task"):
     if st.session_state.pet is None:
@@ -49,23 +53,39 @@ if st.button("Add task"):
             duration_minutes=int(duration),
             priority=Priority(priority),      # str → Priority enum
             frequency=Frequency(frequency),   # str → Frequency enum
+            time=task_time.strftime("%H:%M"), # time_input → "HH:MM" string
         )
         st.session_state.pet.add_task(task)  # Pet.add_task() stores the task
         st.success(f"Added '{task_title}' to {st.session_state.pet.name}'s tasks.")
 
-# Show current task list
+# Show current task list, sorted chronologically via Scheduler.sort_by_time()
 if st.session_state.pet and st.session_state.pet.get_tasks():
+    scheduler = Scheduler(st.session_state.owner)
+    ordered_tasks = scheduler.sort_by_time(st.session_state.pet.get_tasks())
+
     st.write(f"Current tasks for **{st.session_state.pet.name}**:")
     st.table([
         {
+            "Time": t.time,
             "Task": t.description,
             "Duration (min)": t.duration_minutes,
             "Priority": t.priority.value,
             "Frequency": t.frequency.value,
             "Done": t.completed,
         }
-        for t in st.session_state.pet.get_tasks()
+        for t in ordered_tasks
     ])
+
+    pending_tasks = [t for t in ordered_tasks if not t.completed]
+    if pending_tasks:
+        task_labels = [f"{t.time} — {t.description}" for t in pending_tasks]
+        selected_index = st.selectbox(
+            "Mark a task complete", range(len(task_labels)), format_func=lambda i: task_labels[i]
+        )
+        if st.button("Mark complete"):
+            selected_task = pending_tasks[selected_index]
+            scheduler.complete_task(st.session_state.pet, selected_task)  # Scheduler.complete_task()
+            st.success(f"Marked '{selected_task.description}' complete.")
 else:
     st.info("No tasks yet. Add one above.")
 
@@ -81,13 +101,30 @@ if st.button("Generate schedule"):
         st.warning("Add at least one task before generating a schedule.")
     else:
         scheduler = Scheduler(st.session_state.owner)
+
+        # Flag same-time clashes across all of the owner's pets before showing the plan.
+        conflict_warnings = scheduler.detect_time_conflicts()
+        if conflict_warnings:
+            for warning in conflict_warnings:
+                st.warning(f"⚠️ {warning}")
+        else:
+            st.success("✅ No scheduling conflicts detected.")
+
         plan = scheduler.generate_plan(st.session_state.pet)  # Scheduler.generate_plan()
 
-        st.success(f"Today's plan for {st.session_state.pet.name}:")
-        for task in plan:
-            st.markdown(
-                f"- **[{task.priority.value.upper()}]** {task.description} "
-                f"— {task.duration_minutes} min ({task.frequency.value})"
-            )
-        total = sum(t.duration_minutes for t in plan)
-        st.caption(f"Total scheduled time: {total} min")
+        if not plan:
+            st.info("Nothing is due today.")
+        else:
+            st.success(f"Today's plan for {st.session_state.pet.name}:")
+            st.table([
+                {
+                    "Time": t.time,
+                    "Priority": t.priority.value.upper(),
+                    "Task": t.description,
+                    "Duration (min)": t.duration_minutes,
+                    "Frequency": t.frequency.value,
+                }
+                for t in plan
+            ])
+            total = sum(t.duration_minutes for t in plan)
+            st.caption(f"Total scheduled time: {total} min")
