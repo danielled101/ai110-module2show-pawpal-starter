@@ -95,14 +95,15 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time()` | Sorts tasks chronologically by their `"HH:MM"` `time` field, tie-broken by priority (HIGH first). |
+
+| Filtering | `Scheduler.filter_tasks()` | Filters by completion status (`completed=True/False`) and/or pet name (`pet_name=...`), searching across all of an owner's pets when no explicit task list is given. Also excludes tasks whose `due_date` is still in the future. |
+
+| Conflict handling | `Scheduler.detect_conflicts()`, `Scheduler.detect_time_conflicts()` | `detect_conflicts()` flags tasks that would push the day over `max_daily_minutes`. `detect_time_conflicts()` groups today's tasks by exact `time` value (O(n), one dict pass) and returns human-readable warning strings for same-time collisions — same pet or across pets — instead of raising an exception. |
+
+| Recurring tasks | `Task.mark_completed()`, `Scheduler.complete_task()` | `mark_completed()` computes the next occurrence's `due_date` using `timedelta` (+1 day for DAILY, +7 days for WEEKLY); ONCE tasks don't recur. `Scheduler.complete_task()` marks a task done and automatically adds the next occurrence to the pet's task list. |
 
 ## 📸 Demo Walkthrough
 

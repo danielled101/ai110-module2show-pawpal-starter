@@ -34,7 +34,12 @@ The main issues were that the Scheduler had no clear path to actually reach task
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+
+`detect_time_conflicts` only checks whether two tasks share the exact same `time` value (e.g., both at "08:00"), rather than checking whether their full duration ranges actually overlap. A 30-minute walk starting at 08:00 and a 5-minute medication task starting at 08:20 would genuinely overlap in real life, but since their `time` strings don't match exactly, my scheduler won't flag them as a conflict.
+
 - Why is that tradeoff reasonable for this scenario?
+
+Exact-match detection can be done with a single dict grouped by time string in one pass over the day's tasks (group by time, then flag any group with more than one task). Real overlap detection would instead require sorting tasks by start time and comparing each task's [start, start + duration] window against its neighbors — more moving parts for a hobby app with only a handful of tasks per pet per day. I picked the simpler version because it still catches the mistake I actually cared about (accidentally scheduling two things at the same moment), it was easier to reason about and test, and a full interval-overlap engine felt like more complexity than this scenario needed.
 
 ---
 
